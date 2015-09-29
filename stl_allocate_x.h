@@ -248,6 +248,11 @@ namespace _LXX
 		{
 			Alloc::deallocate(ptr, sizeof(T));
 		}
+		
+		static void deallocate(void * ptr, size_t n)
+		{
+			Alloc::deallocate(ptr, n * sizeof(T));
+		}
 	};
 }
 
