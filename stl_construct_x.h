@@ -32,7 +32,7 @@ namespace _LXX
 		}
 	}
 
-	template<class Iter,class T>
+	template<class Iter, class T>
 	void _destroy(Iter first, Iter last, T*)
 	{
 		typedef typename __type_traits<T>::has_trival_destructor has_destructor;
@@ -43,6 +43,32 @@ namespace _LXX
 	void destroy(Iter first, Iter last)
 	{
 		_destroy(first, last, value_type(first));
+	}
+
+	template<class Iter, class Size>
+	void _destroy_aux(Iter first, Size n, __true_type){}
+
+	template<class Iter, class Size>
+	void _destroy_aux(Iter first, Size n, __false_type)
+	{
+		while (n--)
+		{
+			destroy(&*first);
+			--first;
+		}
+	}
+
+	template<class Iter, class Size,class T>
+	void _destroy(Iter first, Size n, T*)
+	{
+		typedef typename __type_traits<T>::has_trival_destructor has_trival;
+		_destroy_aux(first, n, has_trival());
+	}
+
+	template<class Iter,class Size>
+	void destroy(Iter first, Size n)
+	{
+		_destroy(first, n, value_type(first));
 	}
 
 	void destroy(char *, char*){}
