@@ -431,19 +431,19 @@ namespace _LXX
 		link_type& leftmost()const{ return (link_type&) header->left; }
 		link_type & rightmost()const{ return (link_type&) header->right; }
 
-		static link_type& left(link_type x){ return (link_type&) x->left; }
-		static link_type& right(link_type x){ return (link_type&) x->right; }
-		static link_type& parent(link_type x){ return (link_type&) x->parent; }
-		static reference value(link_type x){ return  x->value_field; }
-		static const Key& key(link_type x){ return KeyOfValue()(value(x)); }
-		static color_type& color(link_type x){ return x->color; }
+		static link_type& left(base_ptr x){ return (link_type&) x->left; }
+		static link_type& right(base_ptr x){ return (link_type&)x->right; }
+		static link_type& parent(base_ptr x){ return (link_type&)x->parent; }
+		static reference value(base_ptr x){ return  ((link_type&)x)->value_field; }
+		static const Key& key(base_ptr x){ return KeyOfValue()(value(x)); }
+		static color_type& color(base_ptr x){ return x->color; }
 
-		static link_type minimum(link_type x)
+		static link_type minimum(base_ptr x)
 		{
 			return (link_type)__rb_tree_node_base::minimum(x);
 		}
 
-		static link_type maximum(link_type x)
+		static link_type maximum(base_ptr x)
 		{
 			return (link_type)__rb_tree_node_base::maxmum(x);
 		}
@@ -775,7 +775,7 @@ namespace _LXX
 		rb_tree<Key, Value, KeyOfValue, Compare, Alloc>::erase(const Key& x) {
 		pair<iterator, iterator> p = equal_range(x);
 		size_type n = 0;
-		distance(p.first, p.second, n);
+		n = distance(p.first, p.second);
 		erase(p.first, p.second);
 		return n;
 	}
