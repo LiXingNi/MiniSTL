@@ -64,6 +64,12 @@ namespace _LXX
 		return static_cast<typename iterator_traits<Iterator>::value_type*>(0);
 	}
 
+	template<class Iterator>
+	inline typename iterator_traits<Iterator>::difference_type* distance_type(const Iterator&)
+	{
+		return static_cast<typename iterator_traits<Iterator>::difference_type*>(0);
+	}
+
 
 	template<class InputIterator>
 	inline typename iterator_traits<InputIterator>::difference_type __distance(InputIterator first, InputIterator last, input_iterator_tag)

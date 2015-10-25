@@ -187,6 +187,13 @@ namespace _LXX
 			}
 		}
 
+		void swap(const vector<T, Alloc>& x)
+		{
+			std::swap(start, x.start);
+			std::swap(finish, x.finish);
+			std::swap(end_of_storage, x.end_of_storage);
+		}
+
 	};	
 
 	template<class T,class Alloc>
