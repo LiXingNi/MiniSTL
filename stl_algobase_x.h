@@ -1,8 +1,14 @@
 #ifndef _STL_ALGOBASE_X_H
 #define _STL_ALGOBASE_X_H
 
+//#include <iostream>
+//#include <string>
+//using std::string;
+//using std::cout;
+//using std::endl;
 #include "stl_iterator_traits_x.h"
 #include "stl_pair_x.h"
+#include "stl_type_traits_x.h"
 
 namespace _LXX
 {
@@ -167,6 +173,171 @@ namespace _LXX
 
 		return result != 0 ? result < 0 : len1 < len2;
 	}
+
+
+	//------------ copy-------------------------------------------------------------------------
+
+	//void p(const string& str)
+	//{
+	//	cout << str << endl;
+	//}
+
+	template<class InputIterator,class OutputIterator>
+	OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result)
+	{
+		//p("copy");
+		return __copy_dispatch<InputIterator, OutputIterator>()(first, last, result);
+	}
+
+	template<>
+	char * copy(const char * first, const char* last, char* result)
+	{
+		//p("copy(char*)");
+		std::memmove(result, first, (last - first));
+		return result + (last - first);
+	}
+
+	template<>
+	wchar_t* copy(const wchar_t* first, const wchar_t * last, wchar_t* result)
+	{
+		//p("copy(wchar_t*)");
+		std::memmove(result, first, sizeof(wchar_t)*(last - first));
+		return result + (last - first);
+	}
+
+	template<class InputIterator,class OutputIterator>
+	struct __copy_dispatch
+	{
+		OutputIterator operator()(InputIterator first, InputIterator last, OutputIterator result)
+		{
+			//p("__copy_dispatch");
+			return __copy(first, last, result, iterator_category(first));
+		}
+	};
+
+	template<class T>
+	struct __copy_dispatch<const T*,T*>
+	{
+		T* operator()(const T* first, const T* last, T* result)
+		{
+			//p("__copy_dispatch(const T*)");
+			return __copy_t(first, last, result, __type_traits<T>::has_trival_assignment_operator());
+		}
+	};
+
+
+	template<class T>
+	struct __copy_dispatch < T*, T* >
+	{
+		T* operator()(T* first, T* last, T* result)
+		{
+			//p("__copy_dispatch(T*)");
+			return __copy_t(first, last, result, __type_traits<T>::has_trival_assignment_operator());
+		}
+	};
+
+	template<class T>
+	T* __copy_t(const T* first, const T* last, T* result, __true_type)
+	{
+		//p("__copy_t(true_type)");
+		std::memmove(result, first, sizeof(T)*(last - first));
+		return result + (last - first);
+	}
+
+	template<class T>
+	T* __copy_t(const T* first, const T*last, T* result, __false_type)
+	{
+		//p("__copy_t(false_type)");
+		return __copy_d(first, last, result, (ptrdiff_t*)0);
+	}
+
+	template<class InputIterator,class OutputIterator>
+	OutputIterator __copy(InputIterator first, InputIterator last, OutputIterator result, input_iterator_tag)
+	{
+		//p("__copy(InputIter)");
+		for (; first != last; ++first, ++result)
+			*result = *first;
+		return result;
+	}
+
+	template<class RandomAccessIterator, class OutputIterator>
+	OutputIterator __copy(RandomAccessIterator first, RandomAccessIterator last, OutputIterator result, random_access_iterator_tag)
+	{
+		//p("__copy(RandomIter)");
+		return __copy_d(first, last, result, distance_type(first));
+	}
+	
+	template<class RandomAccessIterator, class OutputIterator,class Distance>
+	OutputIterator __copy_d(RandomAccessIterator first, RandomAccessIterator last, OutputIterator result, Distance *)
+	{
+		//p("__copy_d");
+		for (Distance n = last - first; n > 0; --n, ++first, ++result)
+			*result = *first;
+		return result;
+	}
+
+
+	//------------------------------------ copy_backward -------------------------------------------------
+	template<class BidirectionIterator1,class BidirectionIterator2>
+	BidirectionIterator2 copy_backward(
+		BidirectionIterator1 first,
+		BidirectionIterator1 last,
+		BidirectionIterator2 result)
+	{
+		return __copy_backward_dispatch<BidirectionIterator1,BidirectionIterator2>()(first, last, result);
+	}
+
+	template<class BidirectionIterator1,class BidirectionIterator2>
+	struct __copy_backward_dispatch
+	{
+		BidirectionIterator2 operator()(BidirectionIterator1 first, BidirectionIterator1 last, BidirectionIterator2 result)
+		{
+			return __copy_backward(first, last, result);
+		}
+	};
+
+	template<class T>
+	struct __copy_backward_dispatch< T*, T* >
+	{
+		T* operator()(T* first, T*last, T*result)
+		{
+			return __copy_backward_t(first, last, result, __type_traits<T>::has_trival_assignment_operator());
+		}
+	};
+
+	template<class T>
+	struct __copy_backward_dispatch < const T*, T* >
+	{
+		T* operator()(const T* first, const T* last, T* result)
+		{
+			return __copy_backward_t(first, last, result, __type_traits<T>::has_trival_assignment_operator());
+		}
+	};
+
+	template<class T>
+	T* __copy_backward_t(const T* first, const T* last, T * result, __true_type)
+	{
+		const ptrdiff_t n = last - first;
+		memmove(result - n, first, sizeof(T)*n);
+		return result - n;
+	}
+
+	template<class T>
+	T* __copy_backward_t(T* first, T* last, T* result, __false_type)
+	{
+		return  __copy_backward(first, last, result);
+	}
+	
+
+	template<class BidirectionIterator1 ,class BidirectionIterator2>
+	BidirectionIterator2 __copy_backward(BidirectionIterator1 first, BidirectionIterator1 last, BidirectionIterator2 result)
+	{
+		while (first != last) *--result = *--last;
+		return result;
+	}
+
+
+	
 
 }
 
