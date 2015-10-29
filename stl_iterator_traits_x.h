@@ -31,6 +31,7 @@ namespace _LXX
 		typedef typename Iterator::reference			reference;
 	};
 
+
 	template<class T>
 	struct iterator_traits < T * >
 	{
