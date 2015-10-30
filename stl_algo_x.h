@@ -586,10 +586,10 @@ namespace _LXX
 	}
 
 	//--------------------------------- remove_copy-------------------------------------------------------------------------------------
-	template<class InputIterator,class OutputIterator,class T>
+	template<class InputIterator, class OutputIterator, class T>
 	OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterator result, const T& value)
 	{
-		for (; first != last;++first)
+		for (; first != last; ++first)
 		{
 			if (*first != value)
 			{
@@ -601,13 +601,177 @@ namespace _LXX
 	}
 
 	//--------------------------------- remove -----------------------------------------------------------------------------------------
-	template<class ForwardIterator,class T>
+	template<class ForwardIterator, class T>
 	ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T & value)
 	{
 		first = _LXX::find(first, last, value);
 		ForwardIterator next = first;
 		return first == last ? first : _LXX::remove_copy(++next, last, first, value);
 		//return _LXX::remove_copy(first, last,first, value);  ////可仅用该句话替代上面的代码，效率与功能均相同
+	}
+
+	//---------------------------------remove_if ----------------------------------------------------------------------------------------
+	template<class ForwardIterator, class Predicate>
+	ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate pred)
+	{
+		first = _LXX::find_if(first, last, pred);
+		ForwardIterator next = first;
+		return _LXX::remove_copy_if(++next, last, first, pred);
+	}
+
+	//-------------------------------- remove_copy_if -------------------------------------------------------------------------------------
+	template<class InputIterator, class OutputIterator, class Predicate>
+	OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
+	{
+		for (; first != last; ++first)
+		{
+			if (!pred(*first))
+			{
+				*result = *first;
+				++result;
+			}
+		}
+		return result;
+	}
+
+	//--------------------------------- replace -----------------------------------------------------------------------------------------
+	template<class ForwardIterator, class T>
+	void replace(ForwardIterator first, ForwardIterator last, const T& old_value, const T& new_value)
+	{
+		for (; first != last; ++first)
+		{
+			if (*first == old_value) *first = new_value;
+		}
+	}
+
+	template<class InputIterator, class OutputIterator, class T>
+	OutputIterator replace_copy(InputIterator first, InputIterator last, OutputIterator result, const T& old_value, const T& new_value)
+	{
+		for (; first != last; ++first, ++result)
+		{
+			*result = *first == old_value ? new_value : *first;
+		}
+		return value;
+	}
+
+	//---------------------------------- reverse ------------------------------------------------------------------------------------------
+	template<class BidirectionIterator>
+	void reverse(BidirectionIterator first, BidirectionIterator last)
+	{
+		__LXX::__reverse(first, last, _LXX::iterator_category(first));
+	}
+
+	template<class BidirectionIterator>
+	void __reverse(BidirectionIterator first, BidirectionIterator last, bidirectional_iterator_tag)
+	{
+		while (true)
+		{
+			if (first == last || first == --last)
+				return;
+			else
+				_LXX::iter_swap(first++, last);
+		}
+	}
+
+	template<class RandomAccessIterator>
+	void __reverse(RandomAccessIterator first, RandomAccessIterator last, random_access_iterator_tag)
+	{
+		while (first < last) iter_swap(first++, --last);
+	}
+
+	//----------------------------------- reverse_copy -----------------------------------------------------------------------------------
+	template<class BidirectionIterator, class OutputIterator>
+	OutputIterator reverse_copy(BidirectionIterator first, BidirectionIterator last, OutputIterator result)
+	{
+		while (last != first)
+		{
+			--last;
+			*result = *last;
+			++result;
+		}
+		return result;
+	}
+
+	//--------------------------------- rotate -----------------------------------------------------------------------------------------------
+	template<class ForwardIterator>
+	void rotate(ForwardIterator first, ForwardIterator middle, ForwardIterator last)
+	{
+		if (first == middle || middle == last) return;
+		__rotate(first, middle, last, _LXX::iterator_category(first),_LXX::distance_type(first));
+	}
+
+
+	template<class ForwardIterator,class Distance>
+	void __rotate(ForwardIterator first, ForwardIterator middle, ForwardIterator last, forward_iterator_tag,Distance *)
+	{
+		for (ForwardIterator i = middle;;)
+		{
+			_LXX::iter_swap(first,i);
+			++first;
+			++i;
+
+			if (first == middle)
+			{
+				if (i == last) return;
+				else middle = i;
+			}
+			else
+			{
+				if (i == last)
+					i = middle;
+			}
+
+		}
+	}
+
+
+	template<class BidirectionIterator,class Distance>
+	void __rotate(BidirectionIterator first, BidirectionIterator middle, BidirectionIterator last, bidirectional_iterator_tag, Distance *)
+	{
+		_LXX::reverse(first, middle);
+		_LXX::reverse(middle, last);
+		_LXX::reverse(first, last);
+	}
+
+	template<class RandomAcccessIterator,class Distance>
+	void __rotate(RandomAcccessIterator first, RandomAcccessIterator middle, RandomAcccessIterator last, random_access_iterator_tag, Distance *)
+	{
+		Distance n = _LXX::__gcd(last - first, middle - first);
+		while (n--)
+		{
+			_LXX::__rotate_cycle(first, last, first + n, middle - first, _LXX::value_type(first));
+		}
+	}
+
+	template<class EuclideanRingElement>
+	EuclideanRingElement __gcd(EuclideanRingElement m, EuclideanRingElement n)
+	{
+		while (n != 0)
+		{
+			EuclideanRingElement t = m % n;
+			m = n;
+			n = t;
+		}
+		return m;
+	}
+
+	template<class RandomAccessIterator,class Distance,class T>
+	void __rotate_cycle(RandomAccessIterator first, RandomAccessIterator last, RandomAccessIterator initial, Distance shift, T*)
+	{
+		T value = *initial;
+		RandomAccessIterator ptr1 = initial;
+		RandomAccessIterator ptr2 = initial + shift;
+		while (ptr2 != initial)
+		{
+
+			*ptr1 = *ptr2;
+			ptr1 = ptr2;
+			if (last - ptr2 > shift)
+				ptr2 += shift;
+			else
+				ptr2 = first + (shift - (last - ptr2));
+		}
+		*ptr1 = value;
 	}
 
 }
