@@ -67,10 +67,17 @@ namespace _LXX
 		_pop_heap_aux(first, Dis(0), holeIndex, Val(*(first + holeIndex)));
 	}
 
+	template <class RandomAccessIterator, class T, class Distance>
+	inline void _pop_heap(RandomAccessIterator first, RandomAccessIterator last,
+		RandomAccessIterator result, T value, Distance*) {
+		*result = *first;
+		_adjust_heap(first, Distance(0), Distance(last - first), value);
+	}
+
 	template<class Iter>
 	void pop_heap(Iter first, Iter last)
 	{
-		_pop_heap(first, Iter::difference_Type(last - first - 1), value_type(first));
+		_pop_heap(first, last - first - 1, value_type(first));
 	}
 
 	template<class RandomAccessIterator>
@@ -78,6 +85,26 @@ namespace _LXX
 	{
 		while (last - first > 1)
 			pop_heap(first, last--);
+	}
+
+	template<class RandomAccessIterator>
+	void make_heap(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		__make_heap(first, last, _LXX::value_type(first), _LXX::distance_type(first));
+	}
+
+	template<class RandomAccessIterator,class T,class Distance>
+	void __make_heap(RandomAccessIterator first, RandomAccessIterator last, T*, Distance*)
+	{
+		if (last - first < 2) return;
+		Distance len = last - first;
+		Distance parent = (len - 2) / 2;
+		while (true)
+		{
+			_adjust_heap(first, parent, len, T(*(first + parent)));
+			if (parent == 0) return;
+			--parent;
+		}
 	}
 }
 

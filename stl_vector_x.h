@@ -187,7 +187,7 @@ namespace _LXX
 			}
 		}
 
-		void swap(const vector<T, Alloc>& x)
+		void swap(vector<T, Alloc>& x)
 		{
 			std::swap(start, x.start);
 			std::swap(finish, x.finish);

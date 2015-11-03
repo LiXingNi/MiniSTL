@@ -96,6 +96,28 @@ namespace _LXX
 		typedef typename iterator_traits<InputIterator>::iterator_category	category;
 		return __distance(first, last, category());
 	}
+
+
+	template<class RandomAccessIterator,class Distance>
+	void __advance(RandomAccessIterator &iter, Distance n, random_access_iterator_tag)
+	{
+		iter += n;
+	}
+
+	template<class RandomAccessIterator, class Distance>
+	void __advance(RandomAccessIterator &iter, Distance n, input_iterator_tag)
+	{
+		while (n--)
+		{
+			++iter;
+		}
+	}
+
+	template<class InputIterator,class Distance>
+	void advance(InputIterator& iter, Distance n)
+	{
+		__advance(iter, n, iterator_traits<InputIterator>::iterator_category());
+	}
 }
 
 #endif

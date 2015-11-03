@@ -3,9 +3,268 @@
 
 #include "stl_iterator_traits_x.h"
 #include "stl_algobase_x.h"
+#include "stl_heap_x.h"
 
 namespace _LXX
 {
+	//---------------------------------- median --------------------------------------------------------------------------------------------------
+	template<class T>
+	inline const T& __median(const T& a, const T& b, const T&c)
+	{
+		if (a < b)
+		{
+			if (c < a)
+				return a;
+			else if (b < c)
+				return b;
+			else
+				return c;
+		}
+		else if (a < c)
+			return a;
+		else if (c < b)
+			return b;
+		else
+			return c;
+	}
+	
+	template<class T,class Compare>
+	inline const T& __median(const T& a, const T& b, const T& c, Compare comp)
+	{
+		if (comp(a,b))
+		{
+			if (comp(c,a))
+				return a;
+			else if (comp(b,c))
+				return b;
+			else
+				return c;
+		}
+		else if (comp(a,c))
+			return a;
+		else if (comp(c,b))
+			return b;
+		else
+			return c;
+	}
+	}
+
+	//---------------------------------- insert_sort ----------------------------------------------------------------------------------------------
+	template<class RandomAccessIterator>
+	void __insert_sort(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		if (first == last) return;
+		for (RandomAccessIterator i = first + 1; i != last; ++i)
+			__liner_insert(first, i, _LXX::value_type(first));
+	}
+
+	template<class RandomAccessIterator,class T>
+	void __liner_insert(RandomAccessIterator first, RandomAccessIterator last, T*)
+	{
+		T value = *last;
+		if (value < *first)
+		{
+			_LXX::copy_backward(first, last, last + 1);
+			*first = value;
+		}
+		else
+		{
+			__unguarded_liner_insert(last, value);
+		}
+	}
+
+	template<class RandomAccessIterator,class T>
+	void __unguarded_liner_insert(RandomAccessIterator last, const T& value)
+	{
+		RandomAccessIterator next = last;
+		--next;
+		while (value < *next)
+		{
+			*last = *next;
+			last = next;
+			--next;
+		}
+		*last = value;
+	}
+
+	//---------------------------------- partial_sort ------------------------------------------------------------------------------------------------
+	template<class RandomAccessIterator>
+	void partial_sort(RandomAccessIterator first, RandomAccessIterator middle, RandomAccessIterator last)
+	{
+		__partial_sort(first, middle, last, _LXX::value_type(first));
+	}
+
+	template<class RandomAccessIterator,class T>
+	void __partial_sort(RandomAccessIterator first, RandomAccessIterator middle, RandomAccessIterator last, T*)
+	{
+		_LXX::make_heap(first, middle);
+		for (RandomAccessIterator i = middle; i != last; ++i)
+		{
+			if (*i < *first)
+			{
+				_LXX::_pop_heap(first, middle, i, T(*i), _LXX::distance_type(first));
+			}
+		}
+		_LXX::sort_heap(first, middle);
+	}
+
+	//----------------------------------- random_shuffle------------------------------------------------------------------------------------------------
+	template<class RandomAccessIterator>
+	inline void random_shuffle(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		__random_shuffle(first, last, _LXX::distance_type(first));
+	}
+
+	template<class RandomAccessIterator, class Distance>
+	inline void __random_shuffle(RandomAccessIterator first, RandomAccessIterator last, Distance*)
+	{
+		if (first == last) return;
+		for (RandomAccessIterator i = first + 1; i != last; ++i)
+		{
+			_LXX::iter_swap(i, first + Distance(std::rand() % ((i - first) + 1)));
+		}
+	}
+
+	template<class RandomAccessIterator, class RandomNumberGenerator>
+	inline void random_shuffle(RandomAccessIterator first, RandomAccessIterator last, RandomNumberGenerator & rand)
+	{
+		if (first == last) return;
+		for (RandomAccessIterator i = first + 1; i != last; ++i)
+		{
+			_LXX::iter_swap(i, first + rand(i - first + 1));
+		}
+	}
+
+	//----------------------------------- prev_permutation ------------------------------------------------------------------------------------------
+	template<class BidirectionalIterator>
+	bool prev_premutation(BidirectionalIterator first, BidirectionalIterator last)
+	{
+		if (first == last) return false;
+		BidirectionalIterator i = first;
+		++i;
+		if (i == last) return false;
+		i = last;
+		--i;
+
+		for (;;)
+		{
+			BidirectionalIterator ii = i;
+			--i;
+			if (*ii < *i)
+			{
+				BidirectionalIterator j = last;
+				while (!(*(--j) < *i));
+				_LXX::iter_swap(i, j);
+				_LXX::reverse(ii, last);
+				return true;
+			}
+			if (i == first)
+			{
+				_LXX::reverse(first, last);
+				return false;
+			}
+		}
+	}
+	
+	//------------------------------------ next_permutation --------------------------------------------------------------------------------------------
+	template<class BidirectionalIterator>
+	bool next_permutation(BidirectionalIterator first, BidirectionalIterator last)
+	{
+		if (first == last) return false;
+		BidirectionalIterator i = first;
+		++i;
+		if (i == last) return false; //仅有一个元素
+		i = last;
+		--i;
+
+		for (;;)
+		{
+			BidirectionalIterator ii = i;
+			--i;
+			if (*i < *ii)
+			{
+				BidirectionalIterator j = last;
+				while (!(*i < *(--j)));
+				_LXX::iter_swap(i, j);
+				_LXX::reverse(ii, last);
+				return true;
+			}
+			if (i == first)
+			{
+				_LXX::reverse(first, last);
+				return false;
+			}
+		}
+	}
+
+	//------------------------------------ binary_search ---------------------------------------------------------------------------------------------
+	template<class ForwardIterator,class T>
+	bool binary_search(ForwardIterator first, ForwardIterator last, const T& value)
+	{
+		ForwardIterator i = _LXX::lower_bound(first, last, value);
+		return i != last && !(value < *i);
+	}
+
+	//------------------------------------ upper_bound -----------------------------------------------------------------------------------------------
+
+	template<class RandomAccessIterator, class T, class Distance>
+	RandomAccessIterator __upper_bound(RandomAccessIterator first, RandomAccessIterator last, const T &value, Distance *,random_access_iterator_tag)
+	{
+		Distance len = _LXX::distance(first, last);
+		RandomAccessIterator middle;
+		Distance half = 0;
+
+		while (len > 0)
+		{
+			half = len >> 1;
+			middle = first + half;
+
+			if (value < *middle)
+			{
+				len = half;
+			}
+			else
+			{
+				first = middle + 1;
+				len = len - half - 1;
+			}
+		}
+		return first;
+	}
+
+	template<class ForwardIterator,class T,class Distance>
+	ForwardIterator __upper_bound(ForwardIterator first, ForwardIterator last, const T &value, Distance *, forward_iterator_tag)
+	{
+		Distance len = _LXX::distance(first, last);
+		ForwardIterator middle;
+		Distance half = 0;
+
+		while (len > 0)
+		{
+			half = len >> 1;
+			middle = first;
+			_LXX::advance(middle, half);
+			
+			if (value < *middle)
+			{
+				len = half;
+			}
+			else
+			{
+				first = ++middle;
+				len = len - half - 1;
+			}
+		}
+		return first;
+	}
+
+	template<class ForwardIterator,class T>
+	ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const T& value)
+	{
+		return __upper_bound(first, last, value, _LXX::distance_type(first), _LXX::iterator_category(first));
+	}
+
+	//------------------------------------- lower_bound -----------------------------------------------------------------------------------------------
 
 	template<class RandomAccessIterator, class T, class Distance>
 	RandomAccessIterator __lower_bound(RandomAccessIterator first, RandomAccessIterator last, const T & value, Distance *, random_access_iterator_tag)
@@ -17,7 +276,7 @@ namespace _LXX
 		while (len > 0)
 		{
 			half = len >> 1;
-			middle = first = half;
+			middle = first + half;
 			if (*middle < value)
 			{
 				first = middle + 1;
@@ -29,10 +288,84 @@ namespace _LXX
 		return first;
 	}
 
+	template<class ForwardIterator,class T,class Distance>
+	ForwardIterator __lower_bound(ForwardIterator first, ForwardIterator last, const T& value, Distance*, forward_iterator_tag)
+	{
+		Distance len = _LXX::distance(first, last);
+		Distance half;
+		ForwardIterator middle;
+
+		while (len > 0)
+		{
+			half = len >> 1;
+			middle = first;
+			_LXX::advance(middle, half);
+			if (*middle < value)  //*middle < value, 所找的值一定在右半部分
+			{
+				first = ++middle;
+				len = len - half - 1;
+			}
+			else //*middle >= value, 所找的值在左半部分或者在 middle 处
+				len = half;  //此处若是写为 len = half + 1, 则当 value == middle, len = 0 时将进入死循环
+		}
+		return first;
+	}
+
+	template<class RandomAccessIterator, class T,class Compare, class Distance>
+	RandomAccessIterator __lower_bound(RandomAccessIterator first, RandomAccessIterator last, const T & value, Compare comp,Distance *, random_access_iterator_tag)
+	{
+		Distance len = last - first;
+		Distance half;
+		RandomAccessIterator middle;
+
+		while (len > 0)
+		{
+			half = len >> 1;
+			middle = first + half;
+			if (comp(*middle,value))
+			{
+				first = middle + 1;
+				len = len - half - 1;
+			}
+			else
+				len = half;
+		}
+		return first;
+	}
+
+	template<class ForwardIterator, class T, class Compare,class Distance>
+	ForwardIterator __lower_bound(ForwardIterator first, ForwardIterator last, const T& value, Compare comp,Distance*, forward_iterator_tag)
+	{
+		Distance len = _LXX::distance(first, last);
+		Distance half;
+		ForwardIterator middle;
+
+		while (len > 0)
+		{
+			half = len >> 1;
+			middle = first;
+			_LXX::advance(middle, half);
+			if (comp(*middle,value))  //*middle < value, 所找的值一定在右半部分
+			{
+				first = ++middle;
+				len = len - half - 1;
+			}
+			else //*middle >= value, 所找的值在左半部分或者在 middle 处
+				len = half;  //此处若是写为 len = half + 1, 则当 value == middle, len = 0 时将进入死循环
+		}
+		return first;
+	}
+
 	template<class ForwardIterator, class T>
 	inline ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T & value)
 	{
 		return __lower_bound(first, last, value, distance_type(first), iterator_category(first));
+	}
+
+	template<class ForwardIterator,class T,class Comp>
+	inline ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T& value, Comp comp)
+	{
+		return __lower_bound(first, last, value, comp, _LXX::distance_type(first), _LXX::iterator_category(first));
 	}
 
 	//------------------------------------ some algorithm about set-------------------------------------------
@@ -658,7 +991,7 @@ namespace _LXX
 	template<class BidirectionIterator>
 	void reverse(BidirectionIterator first, BidirectionIterator last)
 	{
-		__LXX::__reverse(first, last, _LXX::iterator_category(first));
+		_LXX::__reverse(first, last, _LXX::iterator_category(first));
 	}
 
 	template<class BidirectionIterator>
