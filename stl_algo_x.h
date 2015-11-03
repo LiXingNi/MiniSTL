@@ -7,6 +7,88 @@
 
 namespace _LXX
 {
+	//------------------------------------ sort ---------------------------------------------------------------------------------------------------
+#define __stl_threshold 16
+
+	template<class RandomAccessIterator,class T>
+	void __unguarded_insertion_sort_aux(RandomAccessIterator first, RandomAccessIterator last, T*)
+	{
+		for (RandomAccessIterator i = first; i != last; ++i)
+			_LXX::__unguarded_liner_insert(i, T(*i));
+	}
+
+	template<class RandomAccessIterator>
+	void __unguarded_insertion_sort(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		__unguarded_insertion_sort_aux(first, last, _LXX::value_type(first));
+	}
+
+	template<class RandomAccessIterator>
+	void __final_insertion_sort(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		if (last - first > __stl_threshold)
+		{
+			_LXX::__insert_sort(first, first + __stl_threshold);
+			_LXX::__unguarded_insertion_sort(first + __stl_threshold, last);
+		}
+		else
+			_LXX::__insert_sort(first, last);
+	}
+
+
+	template<class RandomAccessIterator,class T,class Size>
+	void __introsort_loop(RandomAccessIterator first, RandomAccessIterator last, T*, Size limit_depth)
+	{
+		while (last - first > __stl_threshold)
+		{
+			if (limit_depth == 0)
+			{
+				_LXX::partial_sort(first, last,last);
+					return;
+			}
+			--limit_depth;
+
+			RandomAccessIterator curr = __unguarded_partition(first, last, T(_LXX::__median(*first, *(last - 1), *(first + (last - first) / 2))));
+			__introsort_loop(curr, last,_LXX::value_type(first), limit_depth);
+			last = curr;
+		}
+	}
+
+	template<class RandomAccessIterator>
+	void sort(RandomAccessIterator first, RandomAccessIterator last)
+	{
+		if (first != last)
+		{
+			__introsort_loop(first, last, _LXX::value_type(first), __lg(last - first) * 2);
+			__final_insertion_sort(first, last);
+		}
+	}
+
+	template<class Size>
+	inline Size __lg(Size n)
+	{
+		Size k;
+		for (k = 0; n > 1; ++k, n >>= 1);
+		return k;
+	}
+
+	//----------------------------------- partition ----------------------------------------------------------------------------------------------
+	template<class RandomAccessIterator,class T>
+	RandomAccessIterator __unguarded_partition(RandomAccessIterator first, RandomAccessIterator last, const T& pivot)
+	{
+		while (true)
+		{
+			while (*first < pivot) ++first;
+			--last;
+			while (pivot < *last) --last;
+			
+			if (!(first < last)) return first;
+			_LXX::iter_swap(first, last);
+			
+			++first;
+		}
+	}
+
 	//---------------------------------- median --------------------------------------------------------------------------------------------------
 	template<class T>
 	inline const T& __median(const T& a, const T& b, const T&c)
@@ -46,7 +128,6 @@ namespace _LXX
 			return b;
 		else
 			return c;
-	}
 	}
 
 	//---------------------------------- insert_sort ----------------------------------------------------------------------------------------------
