@@ -4,9 +4,195 @@
 #include "stl_iterator_traits_x.h"
 #include "stl_algobase_x.h"
 #include "stl_heap_x.h"
+#include "stl_pair_x.h"
+#include "stl_allocate_x.h"
 
 namespace _LXX
 {
+
+	template<class RandomAccessIterator>
+	void nth_element(RandomAccessIterator first, RandomAccessIterator nth, RandomAccessIterator last)
+	{
+		__nth_element(first, nth, last, _LXX::value_type(first));
+	}
+
+	template<class RandomAccessIterator,class T>
+	void __nth_element(RandomAccessIterator first, RandomAccessIterator nth, RandomAccessIterator last, T*)
+	{
+		while (last - first > 3)
+		{
+			RandomAccessIterator cut = _LXX::__unguarded_partition(first, last,T( _LXX::__median(*first, *(last - 1), *(first + (last - first) / 2))));
+
+			if (cut <= nth)
+				first = cut;
+			else
+				last = cut;
+		}
+		_LXX::__insert_sort(first, last);
+	}
+
+	//----------------------------------- inplace_merge ------------------------------------------------------------------------------------------ //use extra space 
+	template<class BidirectionalIterator>
+	void inplace_merge(BidirectionalIterator first, BidirectionalIterator middle, BidirectionalIterator last)
+	{
+		if (first == middle || middle == last) return;
+		__inplace_merge_aux(first, middle, last, _LXX::value_type(first), _LXX::distance_type(first));
+	}
+
+	template<class BidirectionalIterator, class T, class Distance>
+	void __inplace_merge_aux(BidirectionalIterator first, BidirectionalIterator middle, BidirectionalIterator last, T*, Distance*)
+	{
+		Distance len1 = _LXX::distance(first, middle);
+		Distance len2 = _LXX::distance(middle, last);
+		void * buffer = simpleAlloc<T>::allocate(_LXX::distance(first, last));
+		if (buffer == 0)
+		{
+			cerr << "have no space" << endl;
+			return;
+		}
+		else
+			__merge_adaptive(first, middle, last, len1, len2, buffer);
+	}
+
+	template<class BidirectionalIterator, class Distance, class Pointer>
+	void __merge_adaptive(BidirectionalIterator first, BidirectionalIterator middle, BidirectionalIterator last, Distance len1, Distance len2, Pointer buffer)
+	{
+		Distance buffer_size = _LXX::distance(first, last);
+		if (len1 <= len2 && len1 <= buffer_size)
+		{
+			Pointer end_buffer = _LXX::copy(first, middle, buffer);
+			_LXX::merge(buffer, end_buffer, middle, last,first);
+		}
+		else if (len2 <= buffer_size)
+		{
+			Pointer end_buffer = _LXX::copy(middle, last, buffer);
+			_LXX::merge_backward(buffer, end_buffer, first, middle, last);
+		}
+		else
+		{
+			BidirectionalIterator first_cut = first;
+			BidirectionalIterator second_cut = middle;
+
+			Distance len11 = 0;
+			Distance len22 = 0;
+			
+			if (len1 > len2)
+			{
+				len11 = len1 / 2;
+				_LXX::advance(first_cur, len11);
+				second_cut = _LXX::lower_bound(middle, last, *first_cut);
+				len22 = _LXX::distance(middle, second_cut);
+			}
+			else
+			{
+				len22 = len2 / 2;
+				_LXX::advance(second_cut, len22);
+				first_cut = _LXX::upper_bound(first, middle, *second_cut);
+				len11 = _LXX::distance(first, first_cut);
+			}
+
+			BidirectionalIterator new_middle = __rotate_addaptive(first_cut, middle, second_cut, len1 - len11, len22, buffer,buffer_size);
+			__merge_adaptive(first, first_cut, new_middle, len11, len22, buffer,buffer_size);
+			__merge_adaptive(new_middle, second_cut, last, len1 - len11, len2 - len22, buffer,buffer_size);
+		}
+	}
+
+	template<class BidirectionalIterator,class Distance,class Pointer,class Size>
+	void __rotate_addaptive(BidirectionalIterator first, BidirectionalIterator middle, BidirectionalIterator last, Distance len1, Distance len2, Pointer buffer, Size buffer_size)
+	{
+		BidirectionalIterator buffer_end;
+		if (len1 < len2 && len1 <= buffer_size)
+		{
+			buffer_end = _LXX::copy(first, middle, buffer);
+			_LXX::copy(middle, last, first);
+			return _LXX::copy_backward(buffer, buffer_end, last);
+		}
+		else if (len2 <= buffer_size)
+		{
+			buffer_end = _LXX::copy(middle, last, buffer);
+			_LXX::copy_backward(first, middle, last);
+			return _LXX::copy(buffer, buffer_end, first);
+		}
+		else
+		{
+			_LXX::rotate(first, middle, last);
+			advance(first, len2);
+			return first;
+		}
+	}
+
+
+	//----------------------------------- equal_range---------------------------------------------------------------------------------------------
+	template<class ForwardIterator, class T, class Distance>
+	_LXX::pair<ForwardIterator, ForwardIterator> __equal_range(ForwardIterator first, ForwardIterator last, const T& value, Distance*, forward_iterator_tag)
+	{
+		Distance len = _LXX::distance(first, last);
+		Distance half = 0;
+		ForwardIterator middle, left, right;
+
+		while (len > 0)
+		{
+			half = len >> 1;
+			middle = first;
+			_LXX::advance(middle, half);
+			if (*middle < value)
+			{
+				first = middle;
+				++first;
+				len = len - half - 1;
+			}
+			else if (value < *middle)
+			{
+				len = half;
+			}
+			else
+			{
+				left = _LXX::lower_bound(first, middle, value);
+				right = _LXX::upper_bound(++middle, last, value);
+				return _LXX::make_pair(left, right);
+			}
+		}
+		return _LXX::make_pari(first, first);
+	}
+
+
+	template<class RandomAccessIterator,class T,class Distance>
+	_LXX::pair<RandomAccessIterator, RandomAccessIterator> __equal_range(RandomAccessIterator first, RandomAccessIterator last, const T& value,Distance*, random_access_iterator_tag)
+	{
+		Distance len = last - first;
+		Distance half = 0;
+		RandomAccessIterator middle,left,right;
+		
+		while (len > 0)
+		{
+			half = len >> 1;
+			middle = first + half;
+
+			if (*middle < value)
+			{
+				first = middle + 1;
+				len = len - half - 1;
+			}
+			else if (value < *middle)
+			{
+				len = half;
+			}
+			else
+			{
+				left = _LXX::lower_bound(first, middle, value);
+				right = _LXX::upper_bound(++middle, last, value);
+				return _LXX::make_pair(left, right);
+			}
+		}
+		return _LXX::make_pair(first, first);
+	}
+
+	template<class ForwardIterator,class T>
+	_LXX::pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator first, ForwardIterator last, const T& value)
+	{
+		return __equal_range(first, last, value,_LXX::distance_type(first), _LXX::iterator_category(first));
+	}
+
 	//------------------------------------ sort ---------------------------------------------------------------------------------------------------
 #define __stl_threshold 16
 
@@ -947,6 +1133,30 @@ namespace _LXX
 		return _LXX::copy(first2, last2, _LXX::copy(first1, last1, result));
 	}
 
+	template<class BidirectionalIterator1,class BidirectionalIterator2,class BidirectionalIterator3>
+	BidirectionalIterator3 merge_backward(BidirectionalIterator1 first1, BidirectionalIterator1 last1, BidirectionalIterator2 first2, BidirectionalIterator2 last2, BidirectionalIterator3 result)
+	{
+		if (first1 == last1) return _LXX::copy_backward(first2, last2, result);
+		if (first2 == last2) return _LXX::copy_backward(first1, last1, result);
+		--last1;
+		--last2;
+
+		while (true)
+		{
+			if (*last2 < *last1)
+			{
+				*--result = *last1;
+				if (last1 == first1) return _LXX::copy_backward(first2, ++last2, result);
+				--last1;
+			}
+			else
+			{
+				*--result = *last2;
+				if (first2 == last2) return _LXX::copy_backward(first1, ++last1, result);
+				--last2;
+			}
+		}
+	}
 
 	//--------------------------------- min_element -----------------------------------------------------------------------------------
 	template<class ForwardIterator>
