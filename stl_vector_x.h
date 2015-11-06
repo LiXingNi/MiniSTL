@@ -1,6 +1,7 @@
 #ifndef _STL_VECTOR_X_H
 #define _STL_VECTOR_X_H
 #include "stl_allocate_x.h"
+#include "stl_iterator_x.h"
 #include "stl_uninitialize_x.h"
 
 namespace _LXX
@@ -16,6 +17,7 @@ namespace _LXX
 		typedef const T*	const_iterator;
 		typedef T&			reference;
 		typedef const T&	const_reference;
+		typedef _LXX::reverse_iterator<iterator> reverse_iterator;
 
 	private:
 		T* start;
